@@ -41,6 +41,7 @@ navReports.addEventListener('click', (e) => {
     viewReports.style.display = 'block';
     viewMinutas.style.display = 'none';
     document.getElementById('view-qr').style.display = 'none';
+    document.getElementById('view-calendar').style.display = 'none';
     if (window.innerWidth <= 768) closeMobileMenu();
 });
 
@@ -51,6 +52,7 @@ navMinutas.addEventListener('click', (e) => {
     viewMinutas.style.display = 'block';
     viewReports.style.display = 'none';
     document.getElementById('view-qr').style.display = 'none';
+    document.getElementById('view-calendar').style.display = 'none';
     if (window.innerWidth <= 768) closeMobileMenu();
 });
 
@@ -508,3 +510,295 @@ document.getElementById('btn-new-qr').addEventListener('click', () => {
     document.getElementById('qr-input-telefono').value = '';
     document.getElementById('qr-input-url').value = '';
 });
+
+// ==============================================
+// MÓDULO DE CALENDARIO · Horarios de Trabajo
+// ==============================================
+
+// ── Constantes ──────────────────────────────
+const PERSONAS = ['Mario', 'Allan'];
+const TIPOS = ['Presencial', 'Virtual'];
+const COLOR_PER = { Mario: 'blue', Allan: 'green' };
+const HEX_PER = { Mario: '#3b82f6', Allan: '#10b981' };
+const DAYS_ES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+const MONTHS_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+// ── Estado ───────────────────────────────────
+let calOffset = 0;
+let calShifts = JSON.parse(localStorage.getItem('cal_shifts_v2') || '[]');
+
+// ── Elementos DOM ────────────────────────────
+const navCal = document.getElementById('nav-calendar');
+const viewCal = document.getElementById('view-calendar');
+
+// ── Utilidades de fecha ──────────────────────
+function toISO(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function getWeek(offset) {
+    const today = new Date();
+    const dow = today.getDay();
+    const diff = (dow === 0 ? -6 : 1 - dow) + offset * 7;
+    const mon = new Date(today);
+    mon.setDate(today.getDate() + diff);
+    mon.setHours(0, 0, 0, 0);
+    return Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return d; });
+}
+function minutesBetween(a, b) {
+    if (!a || !b) return 0;
+    const [ah, am] = a.split(':').map(Number);
+    const [bh, bm] = b.split(':').map(Number);
+    const d = (bh * 60 + bm) - (ah * 60 + am);
+    return d > 0 ? d : 0;
+}
+function fmtMins(m) {
+    if (!m || m <= 0) return '—';
+    const h = Math.floor(m / 60), r = m % 60;
+    return r ? `${h}h ${r}m` : `${h}h`;
+}
+
+// ── Guardar en localStorage ──────────────────
+function saveShifts() {
+    localStorage.setItem('cal_shifts_v2', JSON.stringify(calShifts));
+}
+
+// ── Navegación ───────────────────────────────
+function showAllViews(hide) {
+    ['view-reports', 'view-minutas', 'view-qr', 'view-calendar'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+}
+
+navCal.addEventListener('click', e => {
+    e.preventDefault();
+    showAllViews();
+    viewCal.style.display = 'block';
+    navCal.classList.add('active');
+    renderCal();
+    if (window.innerWidth <= 768) closeMobileMenu();
+});
+
+// Ocultar calendario al navegar a otras secciones
+['nav-reports', 'nav-minutas', 'nav-qr'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', () => {
+        viewCal.style.display = 'none';
+        navCal.classList.remove('active');
+    });
+});
+
+// ── Render principal ─────────────────────────
+function renderCal() {
+    const week = getWeek(calOffset);
+    const todayS = toISO(new Date());
+
+    // Etiqueta de semana
+    const [f, l] = [week[0], week[6]];
+    const label = f.getMonth() === l.getMonth()
+        ? `${f.getDate()} – ${l.getDate()} de ${MONTHS_ES[f.getMonth()]} ${f.getFullYear()}`
+        : `${f.getDate()} ${MONTHS_ES[f.getMonth()]} – ${l.getDate()} ${MONTHS_ES[l.getMonth()]} ${l.getFullYear()}`;
+    document.getElementById('cal-week-label').textContent = label;
+
+    // Grid de días
+    const grid = document.getElementById('cal-grid');
+    grid.innerHTML = '';
+
+    // Acumuladores
+    const acc = {};
+    PERSONAS.forEach(p => { acc[p] = { Presencial: 0, Virtual: 0, total: 0 }; });
+
+    week.forEach((date, idx) => {
+        const dateS = toISO(date);
+        const isToday = dateS === todayS;
+
+        const col = document.createElement('div');
+        col.className = 'sched-day' + (isToday ? ' sched-today' : '');
+
+        // Encabezado del día
+        const header = document.createElement('div');
+        header.className = 'sched-day-head';
+        header.innerHTML = `
+            <span class="sched-day-name">${DAYS_ES[idx].substring(0, 3).toUpperCase()}</span>
+            <span class="sched-day-num">${date.getDate()}</span>
+        `;
+        col.appendChild(header);
+
+        // Turnos del día
+        const body = document.createElement('div');
+        body.className = 'sched-day-body';
+
+        const dayShifts = calShifts
+            .filter(s => s.date === dateS)
+            .sort((a, b) => (a.start || '').localeCompare(b.start || ''));
+
+        dayShifts.forEach(s => {
+            const mins = minutesBetween(s.start, s.end);
+            const card = document.createElement('div');
+            card.className = `sched-shift shift-${COLOR_PER[s.person] || 'blue'}`;
+            card.dataset.id = s.id;
+
+            const icon = s.tipo === 'Virtual'
+                ? '<i class="fa-solid fa-laptop"></i>'
+                : '<i class="fa-solid fa-building"></i>';
+
+            card.innerHTML = `
+                <div class="sched-shift-top">
+                    <strong class="sched-person">${s.person}</strong>
+                    <span class="sched-tipo">${icon} ${s.tipo}</span>
+                </div>
+                <div class="sched-time">
+                    ${s.start && s.end ? `${s.start} – ${s.end}` : s.start || ''}
+                    ${mins > 0 ? `<span class="sched-dur">${fmtMins(mins)}</span>` : ''}
+                </div>
+                ${s.note ? `<div class="sched-note">${s.note}</div>` : ''}
+            `;
+            card.addEventListener('click', () => openModal(dateS, s));
+            body.appendChild(card);
+
+            // Acumular horas
+            if (s.person && acc[s.person] && mins > 0) {
+                const t = s.tipo === 'Virtual' ? 'Virtual' : 'Presencial';
+                acc[s.person][t] += mins;
+                acc[s.person].total += mins;
+            }
+        });
+
+        // Botón para agregar turno
+        const addBtn = document.createElement('button');
+        addBtn.className = 'sched-add-btn';
+        addBtn.dataset.date = dateS;
+        addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        addBtn.title = 'Agregar turno';
+        addBtn.addEventListener('click', () => openModal(dateS, null));
+        body.appendChild(addBtn);
+
+        col.appendChild(body);
+        grid.appendChild(col);
+    });
+
+    renderSummary(acc);
+}
+
+// ── Panel de resumen ─────────────────────────
+function renderSummary(acc) {
+    const panel = document.getElementById('cal-summary');
+    panel.innerHTML = `
+        <div class="sum-title"><i class="fa-solid fa-chart-bar"></i> Resumen de la semana</div>
+        <div class="sum-grid">
+            ${PERSONAS.map(p => `
+            <div class="sum-card" style="border-top: 3px solid ${HEX_PER[p]};">
+                <div class="sum-person" style="color:${HEX_PER[p]};">
+                    <i class="fa-solid fa-user-clock"></i> ${p}
+                </div>
+                <div class="sum-rows">
+                    <div class="sum-row">
+                        <span><i class="fa-solid fa-building"></i> Presencial</span>
+                        <b>${fmtMins(acc[p].Presencial)}</b>
+                    </div>
+                    <div class="sum-row">
+                        <span><i class="fa-solid fa-laptop"></i> Virtual</span>
+                        <b>${fmtMins(acc[p].Virtual)}</b>
+                    </div>
+                    <div class="sum-row sum-total">
+                        <span>Total</span>
+                        <b>${fmtMins(acc[p].total)}</b>
+                    </div>
+                </div>
+            </div>`).join('')}
+        </div>
+    `;
+}
+
+// ── Modal ─────────────────────────────────────
+function openModal(dateS, shift) {
+    const modal = document.getElementById('cal-modal');
+    const overlay = document.getElementById('cal-overlay');
+
+    document.getElementById('cal-shift-id').value = shift ? shift.id : '';
+    document.getElementById('cal-shift-date').value = shift ? shift.date : dateS;
+    document.getElementById('cal-shift-person').value = shift ? shift.person : 'Mario';
+    document.getElementById('cal-shift-tipo').value = shift ? shift.tipo : 'Presencial';
+    document.getElementById('cal-shift-start').value = shift ? (shift.start || '') : '';
+    document.getElementById('cal-shift-end').value = shift ? (shift.end || '') : '';
+    document.getElementById('cal-shift-note').value = shift ? (shift.note || '') : '';
+
+    document.getElementById('cal-modal-titulo').textContent = shift ? 'Editar Turno' : 'Registrar Turno';
+    document.getElementById('cal-modal-fecha').textContent = formatDateLabel(dateS || (shift && shift.date));
+    document.getElementById('cal-del-btn').style.display = shift ? 'flex' : 'none';
+
+    overlay.classList.add('open');
+    document.getElementById('cal-shift-start').focus();
+}
+
+function closeModal() {
+    document.getElementById('cal-overlay').classList.remove('open');
+}
+
+function formatDateLabel(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    const dow = date.getDay();
+    const dayName = DAYS_ES[dow === 0 ? 6 : dow - 1];
+    return `${dayName} ${d} de ${MONTHS_ES[m - 1]}`;
+}
+
+// Guardar turno
+document.getElementById('cal-save-btn').addEventListener('click', () => {
+    const date = document.getElementById('cal-shift-date').value;
+    const person = document.getElementById('cal-shift-person').value;
+    const tipo = document.getElementById('cal-shift-tipo').value;
+    const start = document.getElementById('cal-shift-start').value;
+    const end = document.getElementById('cal-shift-end').value;
+    const note = document.getElementById('cal-shift-note').value.trim();
+
+    if (!date || !person) { alert('Selecciona la persona y la fecha.'); return; }
+
+    const id = document.getElementById('cal-shift-id').value || `sh-${Date.now()}`;
+    const data = { id, date, person, tipo, start, end, note };
+
+    const idx = calShifts.findIndex(s => s.id === id);
+    if (idx >= 0) calShifts[idx] = data;
+    else calShifts.push(data);
+
+    saveShifts();
+    closeModal();
+    renderCal();
+});
+
+// Eliminar turno
+document.getElementById('cal-del-btn').addEventListener('click', () => {
+    const id = document.getElementById('cal-shift-id').value;
+    if (!id || !confirm('¿Eliminar este turno?')) return;
+    calShifts = calShifts.filter(s => s.id !== id);
+    saveShifts();
+    closeModal();
+    renderCal();
+});
+
+// Cerrar modal
+document.getElementById('cal-close-btn').addEventListener('click', closeModal);
+document.getElementById('cal-cancel-btn').addEventListener('click', closeModal);
+document.getElementById('cal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('cal-overlay')) closeModal();
+});
+
+// ── Navegación semanal ───────────────────────
+document.getElementById('cal-prev').addEventListener('click', () => { calOffset--; renderCal(); });
+document.getElementById('cal-next').addEventListener('click', () => { calOffset++; renderCal(); });
+document.getElementById('cal-hoy').addEventListener('click', () => { calOffset = 0; renderCal(); });
+document.getElementById('cal-new-shift').addEventListener('click', () => openModal(toISO(new Date()), null));
+
+// ── Live preview de duración en el modal ─────
+function updateDurPreview() {
+    const s = document.getElementById('cal-shift-start').value;
+    const e = document.getElementById('cal-shift-end').value;
+    const m = minutesBetween(s, e);
+    const preview = document.getElementById('cal-dur-preview');
+    preview.textContent = m > 0 ? `⏱ Duración: ${fmtMins(m)}` : '';
+}
+document.getElementById('cal-shift-start').addEventListener('change', updateDurPreview);
+document.getElementById('cal-shift-end').addEventListener('change', updateDurPreview);
+

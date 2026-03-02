@@ -42,6 +42,10 @@
                     <i class="fa-solid fa-qrcode"></i>
                     <span>Generador QR</span>
                 </a>
+                <a href="#" class="nav-item" id="nav-calendar">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <span>Calendario</span>
+                </a>
             </nav>
             <div class="sidebar-footer">
                 <p>Versión 1.3</p>
@@ -444,6 +448,107 @@
                     </div>
                 </div>
             </section>
+
+            <!-- ====== VISTA: CALENDARIO DE HORARIOS ====== -->
+            <section id="view-calendar" style="display:none;">
+
+                <!-- Topbar -->
+                <div class="sched-topbar">
+                    <div class="sched-nav">
+                        <button id="cal-prev" class="sched-nav-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                        <span id="cal-week-label" class="sched-week-label">Semana</span>
+                        <button id="cal-next" class="sched-nav-btn"><i class="fa-solid fa-chevron-right"></i></button>
+                        <button id="cal-hoy" class="sched-hoy-btn">Hoy</button>
+                    </div>
+                    <button id="cal-new-shift" class="btn-primary">
+                        <i class="fa-solid fa-plus"></i> Registrar Turno
+                    </button>
+                </div>
+
+                <!-- Grid semanal -->
+                <div class="sched-grid" id="cal-grid">
+                    <!-- Generado por JS -->
+                </div>
+
+                <!-- Resumen semanal -->
+                <div class="sched-summary" id="cal-summary">
+                    <!-- Generado por JS -->
+                </div>
+
+            </section>
+
+            <!-- ====== MODAL: REGISTRAR / EDITAR TURNO ====== -->
+            <div class="sched-overlay" id="cal-overlay">
+                <div class="sched-modal glass-panel">
+
+                    <div class="sched-modal-head">
+                        <div>
+                            <h4 id="cal-modal-titulo">Registrar Turno</h4>
+                            <span id="cal-modal-fecha" class="sched-modal-date"></span>
+                        </div>
+                        <button id="cal-close-btn" class="sched-close-btn">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <div class="sched-modal-body">
+                        <input type="hidden" id="cal-shift-id">
+                        <input type="hidden" id="cal-shift-date">
+
+                        <!-- Persona y Tipo -->
+                        <div class="sched-field-row">
+                            <div class="form-group">
+                                <label for="cal-shift-person">Persona</label>
+                                <select id="cal-shift-person">
+                                    <option value="Mario">Mario</option>
+                                    <option value="Allan">Allan</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="cal-shift-tipo">Modalidad</label>
+                                <select id="cal-shift-tipo">
+                                    <option value="Presencial">Presencial</option>
+                                    <option value="Virtual">Virtual</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Horario -->
+                        <div class="sched-field-row">
+                            <div class="form-group">
+                                <label for="cal-shift-start">Entrada *</label>
+                                <input type="time" id="cal-shift-start">
+                            </div>
+                            <div class="form-group">
+                                <label for="cal-shift-end">Salida *</label>
+                                <input type="time" id="cal-shift-end">
+                            </div>
+                        </div>
+
+                        <!-- Nota -->
+                        <div class="form-group">
+                            <label for="cal-shift-note">Nota (opcional)</label>
+                            <input type="text" id="cal-shift-note" placeholder="Ej: turno partido, guardia...">
+                        </div>
+
+                        <!-- Previsualización de duración (live) -->
+                        <div class="sched-dur-preview" id="cal-dur-preview"></div>
+                    </div>
+
+                    <div class="sched-modal-foot">
+                        <button id="cal-del-btn" class="sched-del-btn" style="display:none;">
+                            <i class="fa-solid fa-trash"></i> Eliminar
+                        </button>
+                        <div style="display:flex;gap:10px;">
+                            <button id="cal-cancel-btn" class="btn-secondary"
+                                style="width:auto;padding:10px 22px;">Cancelar</button>
+                            <button id="cal-save-btn" class="btn-primary" style="width:auto;">Guardar</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
         </main>
     </div>
 
