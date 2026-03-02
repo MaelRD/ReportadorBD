@@ -40,6 +40,7 @@ navReports.addEventListener('click', (e) => {
     navMinutas.classList.remove('active');
     viewReports.style.display = 'block';
     viewMinutas.style.display = 'none';
+    document.getElementById('view-qr').style.display = 'none';
     if (window.innerWidth <= 768) closeMobileMenu();
 });
 
@@ -49,6 +50,7 @@ navMinutas.addEventListener('click', (e) => {
     navReports.classList.remove('active');
     viewMinutas.style.display = 'block';
     viewReports.style.display = 'none';
+    document.getElementById('view-qr').style.display = 'none';
     if (window.innerWidth <= 768) closeMobileMenu();
 });
 
