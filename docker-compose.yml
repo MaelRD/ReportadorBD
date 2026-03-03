@@ -1,0 +1,47 @@
+# ==============================================
+# docker-compose.yml - Reporteador Soporte Odoo
+# Levanta la app Python + PostgreSQL con un solo comando
+# ==============================================
+
+services:
+
+  # ── Base de Datos PostgreSQL ─────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: reportes_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: reportes
+      POSTGRES_USER: reportes_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cambia_este_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U reportes_user -d reportes" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Aplicación FastAPI ────────────────────────
+  app:
+    build: .
+    container_name: reportes_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: reportes
+      DB_USER: reportes_user
+      DB_PASSWORD: ${DB_PASSWORD:-cambia_este_password}
+      PORT: 3000
+    depends_on:
+      db:
+        condition: service_healthy
+
+# ── Volumen persistente para los datos ─────────
+volumes:
+  postgres_data:

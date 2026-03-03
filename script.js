@@ -525,7 +525,59 @@ const MONTHS_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio
 
 // ── Estado ───────────────────────────────────
 let calOffset = 0;
-let calShifts = JSON.parse(localStorage.getItem('cal_shifts_v2') || '[]');
+let calShifts = [];
+
+// URL base de la API (mismo origen cuando corre con el servidor Python)
+const API_BASE = '/api';
+
+// ── Cargar turnos desde la API ────────────────
+async function loadShifts() {
+    try {
+        const res = await fetch(`${API_BASE}/shifts`);
+        if (!res.ok) throw new Error('API no disponible');
+        calShifts = await res.json();
+        localStorage.setItem('cal_shifts_v2', JSON.stringify(calShifts));
+    } catch {
+        calShifts = JSON.parse(localStorage.getItem('cal_shifts_v2') || '[]');
+        console.warn('Servidor no disponible, usando datos locales.');
+    }
+}
+
+// ── Guardar turno en la API ───────────────────
+async function saveShiftAPI(data) {
+    try {
+        const res = await fetch(`${API_BASE}/shifts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error('Error al guardar');
+        const idx = calShifts.findIndex(s => s.id === data.id);
+        if (idx >= 0) calShifts[idx] = data;
+        else calShifts.push(data);
+        localStorage.setItem('cal_shifts_v2', JSON.stringify(calShifts));
+        return true;
+    } catch (err) {
+        console.error('Error guardando turno:', err);
+        alert('No se pudo guardar en la base de datos. Verifica la conexión al servidor.');
+        return false;
+    }
+}
+
+// ── Eliminar turno en la API ──────────────────
+async function deleteShiftAPI(id) {
+    try {
+        const res = await fetch(`${API_BASE}/shifts/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Error al eliminar');
+        calShifts = calShifts.filter(s => s.id !== id);
+        localStorage.setItem('cal_shifts_v2', JSON.stringify(calShifts));
+        return true;
+    } catch (err) {
+        console.error('Error eliminando turno:', err);
+        alert('No se pudo eliminar del servidor. Verifica la conexión.');
+        return false;
+    }
+}
 
 // ── Elementos DOM ────────────────────────────
 const navCal = document.getElementById('nav-calendar');
@@ -571,11 +623,12 @@ function showAllViews(hide) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 }
 
-navCal.addEventListener('click', e => {
+navCal.addEventListener('click', async e => {
     e.preventDefault();
     showAllViews();
     viewCal.style.display = 'block';
     navCal.classList.add('active');
+    await loadShifts();
     renderCal();
     if (window.innerWidth <= 768) closeMobileMenu();
 });
@@ -749,7 +802,7 @@ function formatDateLabel(iso) {
 }
 
 // Guardar turno
-document.getElementById('cal-save-btn').addEventListener('click', () => {
+document.getElementById('cal-save-btn').addEventListener('click', async () => {
     const date = document.getElementById('cal-shift-date').value;
     const person = document.getElementById('cal-shift-person').value;
     const tipo = document.getElementById('cal-shift-tipo').value;
@@ -762,23 +815,22 @@ document.getElementById('cal-save-btn').addEventListener('click', () => {
     const id = document.getElementById('cal-shift-id').value || `sh-${Date.now()}`;
     const data = { id, date, person, tipo, start, end, note };
 
-    const idx = calShifts.findIndex(s => s.id === id);
-    if (idx >= 0) calShifts[idx] = data;
-    else calShifts.push(data);
-
-    saveShifts();
-    closeModal();
-    renderCal();
+    const ok = await saveShiftAPI(data);
+    if (ok) {
+        closeModal();
+        renderCal();
+    }
 });
 
 // Eliminar turno
-document.getElementById('cal-del-btn').addEventListener('click', () => {
+document.getElementById('cal-del-btn').addEventListener('click', async () => {
     const id = document.getElementById('cal-shift-id').value;
     if (!id || !confirm('¿Eliminar este turno?')) return;
-    calShifts = calShifts.filter(s => s.id !== id);
-    saveShifts();
-    closeModal();
-    renderCal();
+    const ok = await deleteShiftAPI(id);
+    if (ok) {
+        closeModal();
+        renderCal();
+    }
 });
 
 // Cerrar modal

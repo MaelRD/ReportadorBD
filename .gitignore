@@ -1,0 +1,27 @@
+# Variables de entorno (contienen passwords - NUNCA subir)
+.env
+.env.local
+.env.*.local
+
+# Entorno virtual Python
+.venv/
+venv/
+env/
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Base de datos local (si usas SQLite para pruebas)
+*.db
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+*.swp
