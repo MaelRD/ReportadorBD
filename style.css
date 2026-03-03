@@ -1926,14 +1926,26 @@ body {
 }
 
 .sched-defaults-row {
-    display: grid;
+    display: grid !important;
     grid-template-columns: 1fr 1fr 1fr auto;
     gap: 12px;
     align-items: end;
+    width: 100%;
 }
 
 .sched-defaults-row .form-group {
     margin: 0;
+    min-width: 0;
+    /* Evita que el grid-item se desborde */
+}
+
+/* Anular el width: 100% del form-group global dentro del panel */
+.sched-defaults-row .form-group input,
+.sched-defaults-row .form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.875rem;
+    box-sizing: border-box;
 }
 
 .sched-defaults-row label {
@@ -1970,14 +1982,27 @@ body {
     background: rgba(99, 102, 241, 0.3);
 }
 
-@media (max-width: 600px) {
+/* Tablet: 2 columnas para el panel de defaults */
+@media (max-width: 860px) {
     .sched-defaults-row {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr !important;
         gap: 10px;
     }
 
     .btn-apply-default {
         grid-column: span 2;
+        width: 100%;
+    }
+}
+
+/* Móvil: 1 columna */
+@media (max-width: 500px) {
+    .sched-defaults-row {
+        grid-template-columns: 1fr !important;
+    }
+
+    .btn-apply-default {
+        grid-column: span 1;
         width: 100%;
     }
 }
