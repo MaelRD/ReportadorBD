@@ -868,3 +868,94 @@ function updateDurPreview() {
 document.getElementById('cal-shift-start').addEventListener('change', updateDurPreview);
 document.getElementById('cal-shift-end').addEventListener('change', updateDurPreview);
 
+// ==============================================
+// HORARIOS PREDETERMINADOS
+// ==============================================
+
+// ── Clave de almacenamiento ───────────────────
+const DEFAULTS_KEY = 'cal_defaults_v1';
+
+// ── Leer/escribir defaults ────────────────────
+function getDefaults() {
+    return JSON.parse(localStorage.getItem(DEFAULTS_KEY) || '{}');
+}
+
+function saveDefault(person, tipo, start, end) {
+    const d = getDefaults();
+    d[person] = { tipo, start, end };
+    localStorage.setItem(DEFAULTS_KEY, JSON.stringify(d));
+}
+
+// ── Cargar valores guardados en el panel ─────
+function loadDefaultsPanel() {
+    const d = getDefaults();
+    ['Mario', 'Allan'].forEach(p => {
+        const key = p.toLowerCase();
+        if (d[p]) {
+            document.getElementById(`def-${key}-tipo`).value = d[p].tipo || 'Presencial';
+            document.getElementById(`def-${key}-start`).value = d[p].start || '';
+            document.getElementById(`def-${key}-end`).value = d[p].end || '';
+        }
+    });
+}
+
+// ── Guardar default al hacer clic en "Guardar" ─
+['Mario', 'Allan'].forEach(p => {
+    const key = p.toLowerCase();
+    document.getElementById(`btn-save-def-${key}`).addEventListener('click', () => {
+        const tipo = document.getElementById(`def-${key}-tipo`).value;
+        const start = document.getElementById(`def-${key}-start`).value;
+        const end = document.getElementById(`def-${key}-end`).value;
+        saveDefault(p, tipo, start, end);
+
+        // Feedback visual breve
+        const btn = document.getElementById(`btn-save-def-${key}`);
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Guardado';
+        btn.style.background = 'rgba(16,185,129,0.25)';
+        setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 1500);
+    });
+});
+
+// ── Auto-rellenar modal al cambiar persona ────
+document.getElementById('cal-shift-person').addEventListener('change', function () {
+    const d = getDefaults();
+    const person = this.value;
+    if (d[person]) {
+        // Solo rellenar si los campos están vacíos (no sobreescribir una edición)
+        if (!document.getElementById('cal-shift-id').value) {
+            document.getElementById('cal-shift-tipo').value = d[person].tipo || 'Presencial';
+            document.getElementById('cal-shift-start').value = d[person].start || '';
+            document.getElementById('cal-shift-end').value = d[person].end || '';
+            updateDurPreview();
+        }
+    }
+});
+
+// ── openModal: aplicar defaults cuando sea nuevo turno ─
+const _origOpenModal = openModal;
+// Parchamos openModal para aplicar defaults en turnos nuevos
+window.openModal = function (dateS, shift) {
+    _origOpenModal(dateS, shift);
+    if (!shift) {
+        const person = document.getElementById('cal-shift-person').value;
+        const d = getDefaults();
+        if (d[person]) {
+            document.getElementById('cal-shift-tipo').value = d[person].tipo || 'Presencial';
+            document.getElementById('cal-shift-start').value = d[person].start || '';
+            document.getElementById('cal-shift-end').value = d[person].end || '';
+            updateDurPreview();
+        }
+    }
+};
+
+// ── Toggle del panel de defaults ─────────────
+document.getElementById('defaults-toggle-btn').addEventListener('click', () => {
+    const body = document.getElementById('defaults-body');
+    const chevron = document.getElementById('defaults-chevron');
+    body.classList.toggle('open');
+    chevron.classList.toggle('open');
+});
+
+// Inicializar panel con valores guardados
+loadDefaultsPanel();

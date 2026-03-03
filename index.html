@@ -465,6 +465,75 @@
                     </button>
                 </div>
 
+                <!-- Panel de Horarios Predeterminados -->
+                <div class="sched-defaults-panel">
+                    <div class="sched-defaults-header" id="defaults-toggle-btn">
+                        <span class="sched-defaults-title">
+                            <i class="fa-solid fa-sliders"></i> Horarios Predeterminados
+                        </span>
+                        <button class="sched-defaults-toggle" id="defaults-chevron">
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                    </div>
+                    <div class="sched-defaults-body" id="defaults-body">
+
+                        <!-- Mario -->
+                        <div>
+                            <div class="sched-defaults-person-label" style="color:#3b82f6;">
+                                <i class="fa-solid fa-user"></i> Mario
+                            </div>
+                            <div class="sched-defaults-row">
+                                <div class="form-group">
+                                    <label>Modalidad</label>
+                                    <select id="def-mario-tipo">
+                                        <option value="Presencial">Presencial</option>
+                                        <option value="Virtual">Virtual</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Entrada</label>
+                                    <input type="time" id="def-mario-start">
+                                </div>
+                                <div class="form-group">
+                                    <label>Salida</label>
+                                    <input type="time" id="def-mario-end">
+                                </div>
+                                <button class="btn-apply-default" id="btn-save-def-mario">
+                                    <i class="fa-solid fa-floppy-disk"></i> Guardar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Allan -->
+                        <div>
+                            <div class="sched-defaults-person-label" style="color:#10b981;">
+                                <i class="fa-solid fa-user"></i> Allan
+                            </div>
+                            <div class="sched-defaults-row">
+                                <div class="form-group">
+                                    <label>Modalidad</label>
+                                    <select id="def-allan-tipo">
+                                        <option value="Presencial">Presencial</option>
+                                        <option value="Virtual">Virtual</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Entrada</label>
+                                    <input type="time" id="def-allan-start">
+                                </div>
+                                <div class="form-group">
+                                    <label>Salida</label>
+                                    <input type="time" id="def-allan-end">
+                                </div>
+                                <button class="btn-apply-default" id="btn-save-def-allan">
+                                    <i class="fa-solid fa-floppy-disk"></i> Guardar
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
                 <!-- Grid semanal -->
                 <div class="sched-grid" id="cal-grid">
                     <!-- Generado por JS -->
@@ -476,6 +545,7 @@
                 </div>
 
             </section>
+
 
             <!-- ====== MODAL: REGISTRAR / EDITAR TURNO ====== -->
             <div class="sched-overlay" id="cal-overlay" style="display:none;">
