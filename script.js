@@ -764,13 +764,13 @@ function renderSummary(acc) {
     `;
 }
 
-// ── Modal ─────────────────────────────────────
+// ── Modal ─────────────────────────────────────────────────
 function openModal(dateS, shift) {
-    const modal = document.getElementById('cal-modal');
     const overlay = document.getElementById('cal-overlay');
+    const dateInput = document.getElementById('cal-shift-date');
 
     document.getElementById('cal-shift-id').value = shift ? shift.id : '';
-    document.getElementById('cal-shift-date').value = shift ? shift.date : dateS;
+    dateInput.value = shift ? shift.date : (dateS || toISO(new Date()));
     document.getElementById('cal-shift-person').value = shift ? shift.person : 'Mario';
     document.getElementById('cal-shift-tipo').value = shift ? shift.tipo : 'Presencial';
     document.getElementById('cal-shift-start').value = shift ? (shift.start || '') : '';
@@ -778,12 +778,23 @@ function openModal(dateS, shift) {
     document.getElementById('cal-shift-note').value = shift ? (shift.note || '') : '';
 
     document.getElementById('cal-modal-titulo').textContent = shift ? 'Editar Turno' : 'Registrar Turno';
-    document.getElementById('cal-modal-fecha').textContent = formatDateLabel(dateS || (shift && shift.date));
+    document.getElementById('cal-modal-fecha').textContent = formatDateLabel(dateInput.value);
     document.getElementById('cal-del-btn').style.display = shift ? 'flex' : 'none';
+
+    // Actualizar el label del encabezado al cambiar la fecha
+    dateInput.onchange = () => {
+        document.getElementById('cal-modal-fecha').textContent = formatDateLabel(dateInput.value);
+    };
 
     overlay.style.display = 'flex';
     overlay.classList.add('open');
-    document.getElementById('cal-shift-start').focus();
+
+    // Si no hay fecha de contexto (botón global), enfocar la fecha
+    if (!dateS && !shift) {
+        dateInput.focus();
+    } else {
+        document.getElementById('cal-shift-start').focus();
+    }
 }
 
 function closeModal() {

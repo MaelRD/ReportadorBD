@@ -493,9 +493,12 @@
 
                     <div class="sched-modal-body">
                         <input type="hidden" id="cal-shift-id">
-                        <input type="hidden" id="cal-shift-date">
 
-                        <!-- Persona y Tipo -->
+                        <!-- Fecha (seleccionable) -->
+                        <div class="form-group">
+                            <label for="cal-shift-date"><i class="fa-solid fa-calendar-day"></i> Fecha del turno</label>
+                            <input type="date" id="cal-shift-date" required>
+                        </div>
                         <div class="sched-field-row">
                             <div class="form-group">
                                 <label for="cal-shift-person">Persona</label>
